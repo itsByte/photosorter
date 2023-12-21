@@ -2,7 +2,6 @@ package photosorter
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -285,7 +284,7 @@ func ScanDir(src string) (*[]string, error) {
 	paths := []string{}
 
 	// Check if the source directory exists
-	_, err := ioutil.ReadDir(src)
+	_, err := os.ReadDir(src)
 	if os.IsNotExist(err) {
 		return nil, err
 	}
