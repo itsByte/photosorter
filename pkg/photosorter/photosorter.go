@@ -201,6 +201,7 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 
 			img, err := NewImage(path, et)
 			if err != nil {
+				fmt.Println(path, err)
 				mu.Lock()
 				report.Unprocessed[path] = err.Error()
 				mu.Unlock()
