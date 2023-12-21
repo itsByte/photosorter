@@ -176,8 +176,8 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 	// Goroutine for creating images
 	// It receives by channel img src and tries to create it
 	// If error occurs it adds the cause to report otherwise send img over saveCh
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		for {
@@ -203,8 +203,8 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 	// Goroutine for saving images
 	// It receives by channel Image struct and tries to save it
 	// If error occurs it adds the cause to report otherwise img is saved in dst directory
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		defer wg.Done()
 
 		for {
