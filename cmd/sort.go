@@ -42,7 +42,7 @@ var sortCmd = &cobra.Command{
 }
 
 func validateFormatFlag(format string) error {
-	validFormats := []string{"year", "month"}
+	validFormats := []string{"year", "month", "month_numeric"}
 
 	for _, valid := range validFormats {
 		if format == valid {
@@ -50,5 +50,5 @@ func validateFormatFlag(format string) error {
 		}
 	}
 
-	return fmt.Errorf("Invalid format flag provided: '%s'. \nValid formats: 'year', 'month'.", format)
+	return fmt.Errorf("Invalid format flag provided: '%s'. \nValid formats: 'year', 'month', 'month_numeric'.", format)
 }

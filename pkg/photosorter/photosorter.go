@@ -118,13 +118,16 @@ func (img *Image) Save(dir string, format string) error {
 func (img *Image) dst(dstDir string, format string) string {
 	year := strconv.Itoa(img.tm.Year())
 	month := img.tm.Month().String()
+	month_numeric := strconv.Itoa(int(img.tm.Month()))
 
 	tree := []string{dstDir}
 
 	if format == "year" {
 		tree = append(tree, year)
-	} else {
+	} else if format == "month" {
 		tree = append(tree, year, month)
+	} else {
+		tree = append(tree, year, month_numeric)
 	}
 
 	dir := strings.Join(tree, "/")
