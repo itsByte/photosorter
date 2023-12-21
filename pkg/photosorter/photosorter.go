@@ -1,6 +1,7 @@
 package photosorter
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -39,16 +40,48 @@ func NewImage(src string, et *exiftool.Exiftool) (*Image, error) {
 	}
 
 	results := et.ExtractMetadata(src)
-	// Parse exif date to time.Time
-	timeString, err := results[0].GetString("DateTimeOriginal")
+	if len(results) > 1 {
+		return nil, errors.New("more than one file has been scanned")
+	}
+	result := results[0]
+
+	var timeString string
+
+	tags := []string{
+		"DateTimeOriginal",
+		"DateTimeDigitized",
+		"CreateDate",
+		"ModifyDate",
+	}
+
+	var tm time.Time
+
+	for i := 0; i < len(tags); i++ {
+		timeString, err = result.GetString(tags[i])
+		// See if we found tag
+		if err == nil {
+			// Parse exif date to time.Time
+			if tags[i] == "Year" {
+				tm, err = time.Parse("2006", timeString)
+			} else {
+				tm, err = time.Parse("2006:01:02 15:04:05", timeString)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("exif parsing Tag: DateTime\n")
+			}
+			return &Image{
+				data: d,
+				src:  src,
+				tm:   tm,
+			}, nil
+		}
+	}
+
+	info, err := os.Stat(src)
 	if err != nil {
 		return nil, err
 	}
-
-	tm, err := time.Parse("2006:01:02 15:04:05", timeString)
-	if err != nil {
-		return nil, fmt.Errorf("exif parsing Tag: DateTime\n")
-	}
+	tm = info.ModTime()
 
 	return &Image{
 		data: d,
