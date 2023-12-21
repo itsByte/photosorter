@@ -9,8 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dsoprea/go-exif/v3"
-	exifcommon "github.com/dsoprea/go-exif/v3/common"
+	"github.com/barasher/go-exiftool"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -32,44 +31,18 @@ type Image struct {
 // Returns an error if any of the steps in this process fail,
 // such as if the file cannot be read, if the EXIF metadata cannot be extracted or parsed,
 // or if the original creation time cannot be extracted from the EXIF metadata.
-func NewImage(src string) (*Image, error) {
+func NewImage(src string, et *exiftool.Exiftool) (*Image, error) {
 	// Get src img content
 	d, err := os.ReadFile(src)
 	if err != nil {
 		return nil, fmt.Errorf("Reading file %v\n", err)
 	}
 
-	// Extract exif
-	rawExif, err := exif.SearchFileAndExtractExif(src)
-	if err != nil {
-		return nil, fmt.Errorf("exif not found\n")
-	}
-
-	// Exif ifd mapping
-	im, err := exifcommon.NewIfdMappingWithStandard()
-	if err != nil {
-		return nil, fmt.Errorf("exif format\n")
-	}
-
-	// Exif index for explore different tags
-	ti := exif.NewTagIndex()
-	_, index, err := exif.Collect(im, ti, rawExif)
-	if err != nil {
-		return nil, fmt.Errorf("exif format\n")
-	}
-
-	// Exif original creation time
-	tagName := "DateTime"
-	rootIfd := index.RootIfd
-	results, err := rootIfd.FindTagWithName(tagName)
-	if err != nil {
-		return nil, fmt.Errorf("exif Tag: DateTime\n")
-	}
-
+	results := et.ExtractMetadata(src)
 	// Parse exif date to time.Time
-	timeString, err := results[0].Format()
+	timeString, err := results[0].GetString("DateTimeOriginal")
 	if err != nil {
-		return nil, fmt.Errorf("exif parsing Tag: DateTime\n")
+		return nil, err
 	}
 
 	tm, err := time.Parse("2006:01:02 15:04:05", timeString)
@@ -173,6 +146,13 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
+	et, err := exiftool.NewExiftool()
+	if err != nil {
+		fmt.Printf("Error when intializing: %v\n", err)
+		return nil, err
+	}
+	defer et.Close()
+
 	// Goroutine for creating images
 	// It receives by channel img src and tries to create it
 	// If error occurs it adds the cause to report otherwise send img over saveCh
@@ -186,7 +166,7 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 				break
 			}
 
-			img, err := NewImage(path)
+			img, err := NewImage(path, et)
 			if err != nil {
 				mu.Lock()
 				report.Unprocessed[path] = err.Error()
@@ -253,15 +233,7 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 		description := fmt.Sprintf("[cyan][%d/%d][reset]: %s", i, nfiles, p)
 		bar.Describe(description)
 
-		// Check if the file has the .jpg extension
-		jpg := strings.Contains(p, ".jpg")
-
-		if jpg {
-			createCh <- p
-		} else {
-			// File with no jpg extension are placed in unprocessed directly
-			report.Unprocessed[p] = "Not .jpg extension"
-		}
+		createCh <- p
 
 		bar.Add(1)
 	}
