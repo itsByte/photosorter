@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -255,10 +254,7 @@ func SortDir(src string, dst string, format string) (*DirSortReport, error) {
 		bar.Describe(description)
 
 		// Check if the file has the .jpg extension
-		jpg, err := regexp.MatchString(".jpg", p)
-		if err != nil {
-			fmt.Printf("regex err: %v", err)
-		}
+		jpg := strings.Contains(p, ".jpg")
 
 		if jpg {
 			createCh <- p
